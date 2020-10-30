@@ -1,0 +1,63 @@
+pragma solidity >=0.5.13 < 0.7.0 ;
+
+contract Lottery{
+    
+    address public owner ;
+    uint public priceOfOneTicket = 1 ether / 1000000000000000000 ;
+    bool isPause = false ;
+    constructor()public{
+        owner = msg.sender ;
+    }
+    
+    struct Buyers{
+        address buyer ;
+        uint noOfTickets ;
+    
+    }
+    
+    address[] public totalBuyers ;
+    
+    modifier onlyOwner {
+        require(msg.sender==owner , "ONLY OWNER HAVE ACCESS TO IT");
+        _;
+    }
+    
+    modifier checkPause {
+        require(isPause!=true , "SORRY BUT LOTTERY IS STOPPED DUE TO PRIOR REASONS") ;
+        _;
+        
+    }
+    
+    mapping(address=>uint) public addressToTickets ;
+    mapping(address=>Buyers) addressToDetails ;
+    
+    
+    function buyTickets(uint numberOfTickets )public payable checkPause {
+        uint cut = numberOfTickets * 1 ether ;
+        require(msg.value==cut , "PLEASE GIVE THE CORRECT AMOUNT") ;
+        addressToTickets[msg.sender] = addressToTickets[msg.sender] + numberOfTickets ;
+        totalBuyers.push(msg.sender);
+        addressToDetails[msg.sender] =Buyers(msg.sender , numberOfTickets ) ;
+        
+    }
+    
+    function winner() public payable onlyOwner checkPause{
+        uint randOnce = 0 ;
+        uint win = uint(keccak256(abi.encodePacked(now , msg.sender , randOnce)))%totalBuyers.length ;
+        address payable to = address(uint160(totalBuyers[win]));
+        to.transfer(address(this).balance);
+        resetArray();
+ 
+    }
+    
+    function setPause( bool _ispause) public onlyOwner{
+        isPause = _ispause;
+      }
+      
+    function resetArray() private {
+        for(uint i=0 ; i<totalBuyers.length ; i++){
+            delete totalBuyers[i] ;
+        }
+    }
+    
+}
